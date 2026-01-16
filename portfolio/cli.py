@@ -1,0 +1,127 @@
+"""Command-line interface for portfolio backtesting."""
+
+import argparse
+import logging
+import sys
+from datetime import date, datetime
+from pathlib import Path
+
+from .data import fetch_prices, load_transactions
+from .engine import (
+    build_holdings_history,
+    calculate_portfolio_value,
+    get_current_holdings,
+    process_transactions,
+)
+from .metrics import calculate_metrics
+from .report import generate_pdf_report
+from .visualization import create_holdings_pie_chart, create_portfolio_value_chart
+
+# Setup logging
+logging.basicConfig(level=logging.INFO, format="%(levelname)s - %(message)s")
+logger = logging.getLogger(__name__)
+
+
+def parse_args() -> argparse.Namespace:
+    """Parse command line arguments."""
+    parser = argparse.ArgumentParser(
+        description="Backtest portfolio performance based on historical purchases."
+    )
+    parser.add_argument(
+        "--purchases",
+        default="purchases.csv",
+        help="Path to purchases CSV file (default: purchases.csv)",
+    )
+    parser.add_argument(
+        "--output",
+        default="report.pdf",
+        help="Path to output PDF report (default: report.pdf)",
+    )
+    parser.add_argument(
+        "--end-date",
+        type=lambda s: datetime.strptime(s, "%Y-%m-%d").date(),
+        default=None,
+        help="End date for backtest in YYYY-MM-DD format (default: today)",
+    )
+    return parser.parse_args()
+
+
+def main() -> int:
+    """Main entry point for portfolio backtesting."""
+    args = parse_args()
+
+    purchases_path = Path(args.purchases)
+    output_path = Path(args.output)
+    end_date = args.end_date or date.today()
+
+    try:
+        # Load transactions
+        logger.info(f"Loading transactions from {purchases_path}")
+        transactions = load_transactions(purchases_path)
+
+        # Get unique tickers and date range
+        tickers = transactions["ticker"].unique().tolist()
+        start_date = transactions["date"].iloc[0]
+        last_transaction_date = transactions["date"].iloc[-1]
+
+        # Validate end date
+        if end_date < last_transaction_date:
+            raise ValueError(
+                f"End date {end_date} must be on or after last transaction date {last_transaction_date}"
+            )
+
+        # Fetch price data
+        logger.info("Fetching price data...")
+        prices = fetch_prices(tickers, start_date, end_date)
+
+        # Process transactions to calculate shares
+        logger.info("Processing transactions...")
+        transactions = process_transactions(transactions, prices)
+
+        # Build holdings history
+        logger.info("Building holdings history...")
+        holdings = build_holdings_history(transactions, prices)
+
+        # Calculate portfolio value over time
+        logger.info("Calculating portfolio value...")
+        portfolio_value = calculate_portfolio_value(holdings, prices)
+
+        # Get current holdings snapshot
+        current_holdings = get_current_holdings(holdings, prices)
+
+        # Calculate performance metrics
+        logger.info("Calculating metrics...")
+        metrics = calculate_metrics(transactions, portfolio_value, end_date)
+
+        # Create visualizations
+        logger.info("Creating charts...")
+        portfolio_chart = create_portfolio_value_chart(portfolio_value)
+        holdings_chart = create_holdings_pie_chart(current_holdings)
+
+        # Generate PDF report
+        logger.info(f"Generating PDF report: {output_path}")
+        generate_pdf_report(
+            output_path,
+            metrics,
+            transactions,
+            current_holdings,
+            portfolio_chart,
+            holdings_chart,
+        )
+
+        logger.info("Backtest completed successfully")
+        return 0
+
+    except FileNotFoundError as e:
+        logger.error(f"File not found: {e}")
+        return 1
+    except ValueError as e:
+        logger.error(f"Invalid data: {e}")
+        return 1
+    except Exception as e:
+        logger.error(f"Backtest failed: {e}")
+        return 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())
