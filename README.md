@@ -48,8 +48,8 @@ python -m portfolio
 ### Examples
 
 ```bash
-# Use the sample file
-python -m portfolio --transactions examples/sample_transactions.csv
+# Use the example file
+python -m portfolio --transactions examples/example_transactions.csv
 
 # Compare against VT instead of SPY
 python -m portfolio --benchmark VT
