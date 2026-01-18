@@ -28,6 +28,16 @@ logging.basicConfig(level=logging.INFO, format="%(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 
+def parse_date(date_string: str) -> date:
+    """Parse a date string in YYYY-MM-DD format with helpful error message."""
+    try:
+        return datetime.strptime(date_string, "%Y-%m-%d").date()
+    except ValueError:
+        raise argparse.ArgumentTypeError(
+            f"Invalid date format: '{date_string}'. Use YYYY-MM-DD (e.g., 2024-01-15)."
+        )
+
+
 def parse_args() -> argparse.Namespace:
     """Parse command line arguments."""
     parser = argparse.ArgumentParser(
@@ -45,7 +55,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--end-date",
-        type=lambda s: datetime.strptime(s, "%Y-%m-%d").date(),
+        type=parse_date,
         default=None,
         help="End date for backtest in YYYY-MM-DD format (default: today)",
     )
@@ -70,6 +80,12 @@ def main() -> int:
     output_path = Path(args.output)
     end_date = args.end_date or date.today()
     benchmark_ticker = None if args.no_benchmark else args.benchmark
+
+    # Validate output directory exists
+    output_dir = output_path.parent
+    if output_dir and str(output_dir) != "." and not output_dir.exists():
+        logger.error(f"Output directory does not exist: {output_dir}")
+        return 1
 
     try:
         # Load transactions
@@ -162,6 +178,9 @@ def main() -> int:
         return 1
     except ValueError as e:
         logger.error(f"Invalid data: {e}")
+        return 1
+    except ConnectionError as e:
+        logger.error(f"Network error: {e}")
         return 1
     except Exception as e:
         logger.error(f"Backtest failed: {e}")

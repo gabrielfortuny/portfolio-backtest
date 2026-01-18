@@ -96,6 +96,16 @@ def build_holdings_history(
         # Add shares from start_date forward
         holdings.loc[start_date:, ticker] += shares
 
+        # Validate shares never go negative (selling more than owned)
+        if shares < 0:  # This is a sell transaction
+            current_shares = holdings.loc[start_date, ticker]
+            if current_shares < -0.0001:  # Allow tiny floating point errors
+                owned_before = current_shares - shares  # shares is negative, so subtract
+                raise ValueError(
+                    f"Cannot sell {-shares:.4f} shares of {ticker} on {tx_date}: "
+                    f"only {owned_before:.4f} shares held"
+                )
+
     logger.info(f"Built holdings history: {len(holdings)} days, {len(tickers)} tickers")
     return holdings
 

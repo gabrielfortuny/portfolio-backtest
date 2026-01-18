@@ -24,7 +24,14 @@ def load_transactions(path: Path) -> TransactionsDF:
     if not path.exists():
         raise FileNotFoundError(f"Transactions file not found: {path}")
 
-    df = pd.read_csv(path)
+    try:
+        df = pd.read_csv(path)
+    except pd.errors.ParserError as e:
+        raise ValueError(
+            f"Could not parse CSV file: {e}. Ensure file is valid CSV format."
+        )
+    except Exception as e:
+        raise ValueError(f"Could not read CSV file: {e}")
 
     # Validate required columns
     required_columns = ["date", "ticker", "amount"]
@@ -32,8 +39,35 @@ def load_transactions(path: Path) -> TransactionsDF:
     if missing:
         raise ValueError(f"CSV missing required columns: {missing}")
 
-    # Parse dates
-    df["date"] = pd.to_datetime(df["date"]).dt.date
+    # Validate amounts are positive
+    if (df["amount"] <= 0).any():
+        invalid_rows = df[df["amount"] <= 0].index.tolist()
+        raise ValueError(
+            f"Amount must be positive on row(s) {invalid_rows}. "
+            "Use 'type' column for sells."
+        )
+
+    # Validate and normalize ticker symbols
+    for idx, ticker in enumerate(df["ticker"]):
+        ticker_str = str(ticker).strip()
+        if not ticker_str or not ticker_str.replace(".", "").replace("-", "").isalnum():
+            raise ValueError(f"Invalid ticker symbol: '{ticker}' on row {idx}")
+    df["ticker"] = df["ticker"].str.strip().str.upper()
+
+    # Parse dates with helpful error messages
+    try:
+        df["date"] = pd.to_datetime(df["date"]).dt.date
+    except Exception:
+        # Find the specific invalid date for better error message
+        for idx, date_val in enumerate(df["date"]):
+            try:
+                pd.to_datetime(date_val)
+            except Exception:
+                raise ValueError(
+                    f"Invalid date '{date_val}' on row {idx}. "
+                    "Use YYYY-MM-DD format (e.g., 2024-01-15)."
+                )
+        raise ValueError("Invalid date format. Use YYYY-MM-DD format (e.g., 2024-01-15).")
 
     # Handle transaction type (default to buy)
     if "type" not in df.columns:
@@ -79,15 +113,23 @@ def fetch_prices(
     )
 
     # Download data from yfinance
-    data = yf.download(
-        tickers,
-        start=start_date,
-        end=end_date,
-        progress=False,
-    )
+    try:
+        data = yf.download(
+            tickers,
+            start=start_date,
+            end=end_date,
+            progress=False,
+        )
+    except Exception as e:
+        raise ConnectionError(
+            f"Failed to fetch price data: {e}. Check your internet connection."
+        )
 
     if data is None or data.empty:
-        raise ValueError("Failed to fetch price data from Yahoo Finance")
+        raise ValueError(
+            "No price data returned from Yahoo Finance. "
+            "Check that tickers are valid and date range has trading data."
+        )
 
     # Extract closing prices
     if len(tickers) == 1:
