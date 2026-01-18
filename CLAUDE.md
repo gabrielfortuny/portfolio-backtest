@@ -12,14 +12,23 @@ Portfolio Backtest is a Python tool that backtests portfolio performance based o
 # Install dependencies
 pip install -r requirements.txt
 
-# Run with default files (purchases.csv -> report.pdf) and end date (today)
-python -m portfolio.cli
+# Run with default files (transactions.csv -> report.pdf)
+python -m portfolio
 
 # Run with custom files
-python -m portfolio.cli --purchases my_transactions.csv --output my_report.pdf
+python -m portfolio --transactions my_transactions.csv --output my_report.pdf
+
+# Run with sample data
+python -m portfolio --transactions examples/example_transactions.csv
+
+# Custom benchmark (default is SPY)
+python -m portfolio --benchmark VT
+
+# Disable benchmark comparison
+python -m portfolio --no-benchmark
 
 # Run with historical end date
-python -m portfolio.cli --end-date 2025-06-13
+python -m portfolio --end-date 2025-06-13
 ```
 
 ## Project Structure
@@ -27,11 +36,12 @@ python -m portfolio.cli --end-date 2025-06-13
 ```
 portfolio/
 ├── __init__.py       # Package exports
+├── __main__.py       # Entry point for python -m portfolio
 ├── models.py         # TransactionType enum, type aliases
 ├── data.py           # CSV loading, yfinance price fetching
-├── engine.py         # Holdings history, portfolio value calculations
-├── metrics.py        # Returns, CAGR, gain/loss calculations
-├── visualization.py  # Chart generation (line chart, pie chart)
+├── engine.py         # Holdings history, portfolio value, normalization
+├── metrics.py        # Returns, CAGR, gain/loss, benchmark metrics
+├── visualization.py  # Chart generation (value, benchmark, pie)
 ├── report.py         # PDF report generation
 └── cli.py            # Command-line interface
 ```
@@ -49,11 +59,12 @@ CSV with columns:
 
 PDF report containing:
 
-1. Summary metrics (contributions, withdrawals, returns, CAGR)
+1. Summary metrics (contributions, withdrawals, returns, CAGR, benchmark comparison)
 2. Transactions table
 3. Final holdings table
 4. Portfolio value chart over time
-5. Holdings pie chart
+5. Benchmark comparison chart (portfolio vs benchmark % returns)
+6. Holdings pie chart
 
 ## Dependencies
 

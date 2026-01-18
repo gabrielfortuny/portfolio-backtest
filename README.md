@@ -7,6 +7,7 @@ Backtest stock portfolio performance with historical price data.
 - Track buys and sells from a simple CSV file
 - Fetch historical prices from Yahoo Finance
 - Calculate returns, CAGR, and gain/loss metrics
+- Compare performance against a benchmark (default: SPY)
 - Generate PDF reports with charts
 
 ## Installation
@@ -17,7 +18,7 @@ pip install -r requirements.txt
 
 ## Usage
 
-1. Create a `purchases.csv` file with your transactions:
+1. Create a `transactions.csv` file with your transactions:
 
 ```csv
 date,ticker,amount,type
@@ -29,7 +30,7 @@ date,ticker,amount,type
 2. Run the backtest:
 
 ```bash
-python -m portfolio.cli
+python -m portfolio
 ```
 
 3. Open `report.pdf` to view your results.
@@ -37,9 +38,24 @@ python -m portfolio.cli
 ### Options
 
 ```
---purchases FILE    Input CSV file (default: purchases.csv)
---output FILE       Output PDF file (default: report.pdf)
---end-date DATE     End date for backtest in YYYY-MM-DD (default: today)
+--transactions FILE   Input CSV file (default: transactions.csv)
+--output FILE         Output PDF file (default: report.pdf)
+--end-date DATE       End date for backtest in YYYY-MM-DD (default: today)
+--benchmark TICKER    Benchmark for comparison (default: SPY)
+--no-benchmark        Disable benchmark comparison
+```
+
+### Examples
+
+```bash
+# Use the sample file
+python -m portfolio --transactions examples/sample_transactions.csv
+
+# Compare against VT instead of SPY
+python -m portfolio --benchmark VT
+
+# Skip benchmark comparison
+python -m portfolio --no-benchmark
 ```
 
 ## CSV Format
@@ -53,11 +69,12 @@ python -m portfolio.cli
 
 ## Report Contents
 
-1. **Summary** - Contributions, withdrawals, final value, gain/loss, CAGR
+1. **Summary** - Contributions, withdrawals, final value, gain/loss, CAGR, benchmark comparison
 2. **Transactions** - List of all buy and sell transactions
 3. **Final Holdings** - Final positions with values and weights
 4. **Portfolio Value Chart** - Value over time
-5. **Holdings Pie Chart** - Final allocation breakdown
+5. **Benchmark Comparison Chart** - Portfolio vs benchmark returns over time
+6. **Holdings Pie Chart** - Final allocation breakdown
 
 ## License
 

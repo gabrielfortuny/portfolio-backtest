@@ -23,6 +23,7 @@ def generate_pdf_report(
     holdings: pd.DataFrame,
     portfolio_value_chart: Figure,
     holdings_pie_chart: Figure,
+    benchmark_comparison_chart: Figure | None = None,
 ) -> None:
     """Generate PDF report with metrics and charts."""
     with PdfPages(path) as pdf:
@@ -45,6 +46,11 @@ def generate_pdf_report(
         pdf.savefig(portfolio_value_chart, bbox_inches="tight", pad_inches=0.5)
         plt.close(portfolio_value_chart)
 
+        # Benchmark comparison chart (if provided)
+        if benchmark_comparison_chart is not None:
+            pdf.savefig(benchmark_comparison_chart, bbox_inches="tight", pad_inches=0.5)
+            plt.close(benchmark_comparison_chart)
+
         # Holdings pie chart
         pdf.savefig(holdings_pie_chart, bbox_inches="tight", pad_inches=0.5)
         plt.close(holdings_pie_chart)
@@ -54,7 +60,9 @@ def generate_pdf_report(
 
 def _create_summary_page(metrics: dict[str, Any]) -> Figure:
     """Create summary page with portfolio metrics."""
-    fig = plt.figure(figsize=(8.5, 6))
+    has_benchmark = "benchmark_cagr" in metrics
+    fig_height = 7.5 if has_benchmark else 6
+    fig = plt.figure(figsize=(8.5, fig_height))
     ax = fig.add_subplot(111)
     ax.axis("off")
 
@@ -268,6 +276,61 @@ def _create_summary_page(metrics: dict[str, Any]) -> Figure:
         fontweight="medium",
         transform=ax.transAxes,
     )
+
+    # Benchmark section (if benchmark metrics available)
+    if has_benchmark:
+        y -= 0.12
+        benchmark_name = metrics.get("benchmark_name", "Benchmark")
+        ax.text(
+            0.5,
+            y,
+            f"vs {benchmark_name}",
+            fontsize=14,
+            fontweight="bold",
+            ha="center",
+            transform=ax.transAxes,
+        )
+        y -= 0.10
+
+        ax.text(
+            left_x,
+            y,
+            "Benchmark CAGR",
+            fontsize=10,
+            ha="center",
+            color="#666666",
+            transform=ax.transAxes,
+        )
+        ax.text(
+            right_x,
+            y,
+            "Alpha",
+            fontsize=10,
+            ha="center",
+            color="#666666",
+            transform=ax.transAxes,
+        )
+        y -= 0.06
+        ax.text(
+            left_x,
+            y,
+            f"{metrics['benchmark_cagr']:+.2f}%",
+            fontsize=13,
+            ha="center",
+            fontweight="medium",
+            transform=ax.transAxes,
+        )
+        alpha_color = "#10b981" if metrics["alpha"] >= 0 else "#ef4444"
+        ax.text(
+            right_x,
+            y,
+            f"{metrics['alpha']:+.2f}%",
+            fontsize=13,
+            ha="center",
+            fontweight="medium",
+            color=alpha_color,
+            transform=ax.transAxes,
+        )
 
     return fig
 

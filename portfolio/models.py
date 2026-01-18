@@ -33,3 +33,4 @@ PricesDF: TypeAlias = pd.DataFrame  # index: dates, columns: tickers, values: pr
 PortfolioValueSeries: TypeAlias = (
     pd.Series
 )  # index: dates, values: total portfolio value
+NormalizedSeries: TypeAlias = pd.Series  # index: dates, values: indexed to 100

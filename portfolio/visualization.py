@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from matplotlib.figure import Figure
 
-from .models import PortfolioValueSeries
+from .models import NormalizedSeries, PortfolioValueSeries
 
 # Use clean modern font
 plt.rcParams["font.family"] = "sans-serif"
@@ -120,6 +120,73 @@ def create_holdings_pie_chart(holdings: pd.DataFrame) -> Figure:
 
     ax.set_title("Holdings Breakdown by Value", fontsize=14, fontweight="medium")
 
+    fig.tight_layout()
+
+    return fig
+
+
+def create_benchmark_comparison_chart(
+    portfolio_indexed: NormalizedSeries,
+    benchmark_indexed: NormalizedSeries,
+    benchmark_name: str,
+) -> Figure:
+    """Create a line chart comparing portfolio and benchmark performance.
+
+    Both series should be indexed to 100 at the start date.
+
+    Args:
+        portfolio_indexed: Normalized portfolio series (base 100).
+        benchmark_indexed: Normalized benchmark series (base 100).
+        benchmark_name: Name of the benchmark for the legend.
+
+    Returns:
+        Matplotlib Figure object.
+    """
+    fig, ax = plt.subplots(figsize=(10, 6))
+
+    # Convert from base 100 to percentage returns
+    portfolio_returns = portfolio_indexed - 100
+    benchmark_returns = benchmark_indexed - 100
+
+    # Portfolio line (blue solid)
+    ax.plot(
+        portfolio_returns.index,
+        portfolio_returns.values,
+        linewidth=1.5,
+        color="#2563eb",
+        label="Portfolio",
+    )
+
+    # Benchmark line (green dashed)
+    ax.plot(
+        benchmark_returns.index,
+        benchmark_returns.values,
+        linewidth=1.5,
+        color="#10b981",
+        linestyle="--",
+        label=benchmark_name,
+    )
+
+    # Reference line at 0%
+    ax.axhline(y=0, color="#94a3b8", linestyle=":", linewidth=1, alpha=0.7)
+
+    ax.set_xlabel("Date", fontsize=11)
+    ax.set_ylabel("Return (%)", fontsize=11)
+    ax.set_title(
+        f"Portfolio vs {benchmark_name}",
+        fontsize=14,
+        fontweight="medium",
+    )
+
+    # Format y-axis as percentage
+    ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f"{x:+.0f}%"))
+
+    ax.legend(loc="upper left")
+
+    # Rotate x-axis labels for readability
+    plt.xticks(rotation=45, ha="right")
+
+    ax.grid(True, alpha=0.3)
     fig.tight_layout()
 
     return fig

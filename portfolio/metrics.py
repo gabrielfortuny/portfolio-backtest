@@ -3,13 +3,17 @@
 from datetime import date
 from typing import Any
 
-from .models import PortfolioValueSeries, TransactionType, TransactionsDF
+import pandas as pd
+
+from .models import NormalizedSeries, PortfolioValueSeries, TransactionType, TransactionsDF
 
 
 def calculate_metrics(
     transactions: TransactionsDF,
     portfolio_value: PortfolioValueSeries,
     end_date: date | None = None,
+    benchmark_series: NormalizedSeries | None = None,
+    benchmark_name: str | None = None,
 ) -> dict[str, Any]:
     """Calculate portfolio performance metrics.
 
@@ -17,6 +21,8 @@ def calculate_metrics(
         transactions: DataFrame with transaction history
         portfolio_value: Series with daily portfolio values
         end_date: End date for calculations (defaults to today)
+        benchmark_series: Optional normalized benchmark series (indexed to 100)
+        benchmark_name: Optional benchmark ticker name
 
     Returns:
         Dictionary with metrics:
@@ -30,6 +36,10 @@ def calculate_metrics(
         - first_transaction_date: date of first transaction
         - simple_annualized_return: gain_loss_pct / years
         - cagr: compound annual growth rate
+        - benchmark_return: total benchmark return % (if benchmark provided)
+        - benchmark_cagr: benchmark CAGR (if benchmark provided)
+        - alpha: portfolio CAGR minus benchmark CAGR (if benchmark provided)
+        - benchmark_name: benchmark ticker name (if benchmark provided)
     """
     if end_date is None:
         end_date = date.today()
@@ -77,7 +87,7 @@ def calculate_metrics(
         simple_annualized_return = 0.0
         cagr = 0.0
 
-    return {
+    result = {
         "total_contributions": total_contributions,
         "total_withdrawals": total_withdrawals,
         "net_contributions": net_contributions,
@@ -90,3 +100,29 @@ def calculate_metrics(
         "simple_annualized_return": simple_annualized_return,
         "cagr": cagr,
     }
+
+    # Calculate benchmark metrics if provided
+    if benchmark_series is not None and not benchmark_series.empty:
+        benchmark_start = benchmark_series.iloc[0]
+        benchmark_end = benchmark_series.iloc[-1]
+
+        if benchmark_start > 0:
+            benchmark_return = ((benchmark_end / benchmark_start) - 1) * 100
+            if years_elapsed > 0:
+                benchmark_cagr = (
+                    (benchmark_end / benchmark_start) ** (1 / years_elapsed) - 1
+                ) * 100
+            else:
+                benchmark_cagr = 0.0
+            alpha = cagr - benchmark_cagr
+        else:
+            benchmark_return = 0.0
+            benchmark_cagr = 0.0
+            alpha = 0.0
+
+        result["benchmark_return"] = benchmark_return
+        result["benchmark_cagr"] = benchmark_cagr
+        result["alpha"] = alpha
+        result["benchmark_name"] = benchmark_name
+
+    return result

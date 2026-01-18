@@ -242,6 +242,11 @@ pyrightconfig.json
 
 # End of https://www.toptal.com/developers/gitignore/api/python,macos,visualstudiocode,git
 
-purchases.csv
-report.pdf
+# Generated outputs
+*.pdf
+
+# User data
+transactions.csv
+
+# Claude
 .claude/

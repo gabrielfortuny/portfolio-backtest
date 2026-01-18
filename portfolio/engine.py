@@ -6,6 +6,7 @@ import pandas as pd
 
 from .models import (
     HoldingsDF,
+    NormalizedSeries,
     PortfolioValueSeries,
     PricesDF,
     TransactionType,
@@ -185,3 +186,45 @@ def get_current_holdings(holdings: HoldingsDF, prices: PricesDF) -> pd.DataFrame
     df = df.sort_values("ticker").reset_index(drop=True)
 
     return df
+
+
+def normalize_series(series: pd.Series, start_date) -> NormalizedSeries:
+    """Normalize a value series to start at 100 from the given start date.
+
+    Args:
+        series: Series with dates as index, values as values.
+        start_date: The date to start normalization from.
+
+    Returns:
+        Series normalized to 100 at start_date.
+    """
+    # Filter to dates on or after start_date
+    filtered = series[series.index >= start_date]
+    if filtered.empty:
+        return pd.Series(dtype=float)
+
+    base_value = filtered.iloc[0]
+    if base_value == 0:
+        return pd.Series(dtype=float)
+
+    normalized = (filtered / base_value) * 100
+    normalized.name = f"{series.name}_normalized" if series.name else "normalized"
+    return normalized
+
+
+def get_benchmark_series(prices: PricesDF, ticker: str) -> pd.Series:
+    """Extract a benchmark price series from the prices DataFrame.
+
+    Args:
+        prices: DataFrame with dates as index, tickers as columns.
+        ticker: The benchmark ticker to extract.
+
+    Returns:
+        Series with dates as index, benchmark prices as values.
+    """
+    if ticker not in prices.columns:
+        raise ValueError(f"Benchmark ticker {ticker} not found in price data")
+
+    benchmark = prices[ticker].copy()
+    benchmark.name = ticker
+    return benchmark
