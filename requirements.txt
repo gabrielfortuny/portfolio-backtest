@@ -1,3 +1,6 @@
 matplotlib
 pandas
+pytest
+pytest-cov
+pytest-mock
 yfinance

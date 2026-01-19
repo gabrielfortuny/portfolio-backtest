@@ -44,6 +44,15 @@ portfolio/
 ├── visualization.py  # Chart generation (value, benchmark, pie)
 ├── report.py         # PDF report generation
 └── cli.py            # Command-line interface
+
+tests/
+├── conftest.py           # Shared pytest fixtures
+├── test_data.py          # Tests for CSV loading, price fetching
+├── test_engine.py        # Tests for portfolio calculations
+├── test_metrics.py       # Tests for performance metrics
+├── test_visualization.py # Tests for chart generation
+├── test_report.py        # Tests for PDF generation
+└── test_cli.py           # CLI and integration tests
 ```
 
 ## Input Format
@@ -66,8 +75,31 @@ PDF report containing:
 5. Benchmark comparison chart (portfolio vs benchmark % returns)
 6. Holdings pie chart
 
+## Testing
+
+```bash
+# Run all tests
+pytest
+
+# Run with verbose output
+pytest -v
+
+# Run with coverage report
+pytest --cov=portfolio --cov-report=term-missing
+
+# Run specific test file
+pytest tests/test_engine.py
+
+# Run specific test class or function
+pytest tests/test_engine.py::TestBuildHoldingsHistory
+pytest tests/test_engine.py::TestBuildHoldingsHistory::test_build_holdings_history_single_buy
+```
+
 ## Dependencies
 
 - matplotlib - Chart and PDF generation
 - pandas - Data manipulation
+- pytest - Test framework
+- pytest-mock - Mocking support
+- pytest-cov - Coverage reporting
 - yfinance - Yahoo Finance price data API

@@ -76,6 +76,18 @@ python -m portfolio --no-benchmark
 5. **Benchmark Comparison Chart** - Portfolio vs benchmark returns over time
 6. **Holdings Pie Chart** - Final allocation breakdown
 
+## Testing
+
+Run the test suite with pytest:
+
+```bash
+# Run all tests
+pytest
+
+# Run with coverage report
+pytest --cov=portfolio --cov-report=term-missing
+```
+
 ## License
 
 MIT
